@@ -40,7 +40,7 @@
 
 ;; (spark/with-context sc (-> (conf/spark-conf) (conf/master "local") (conf/app-name "ch7")) (count-ratings sc))
 (defn count-ratings [sc]
-  (->> (spark/text-file sc "data/ml-100k/ua.base")
+  (->> (spark/text-file sc "resources/data/ml-100k/ua.base")
        (spark/count)))
 
 (defn parse-line [line]
@@ -54,7 +54,7 @@
                  (Rating. user item rating))))
 
 (defn parse-ratings [sc]
-  (->> (spark/text-file sc "data/ml-100k/ua.base")
+  (->> (spark/text-file sc "resources/data/ml-100k/ua.base")
        (spark/map-to-pair parse-rating)))
 
 (defn training-ratings [ratings]
@@ -200,7 +200,7 @@
   (spark/with-context sc (-> (conf/spark-conf)
                              (conf/master "local")
                              (conf/app-name "ch7"))
-    (let [items   (load-items "u.item")
+    (let [items   (load-items "data/ml-100k/u.item")
           id->name (fn [id] (get items id))
           options {:rank 10
                    :num-iter 10
