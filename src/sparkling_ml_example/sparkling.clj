@@ -6,11 +6,29 @@
             [sparkling.debug :as s-dbg]
             [sparkling.destructuring :as s-de]
             [sparkling.kryo :as k]
-            [sparkling.scalaInterop :as scala])
+            [sparkling.scalaInterop :as scala]
+            [clojure.java.io :as io]
+            [incanter.charts :as c]
+            [incanter.core :as i]
+            [incanter.datasets :as d]
+            [incanter.stats :as s])
   (:import [org.apache.spark.api.java JavaRDD]
            [org.apache.spark.mllib.linalg Vector SparseVector]
            [org.apache.spark.mllib.linalg.distributed RowMatrix]
            [org.apache.spark.mllib.recommendation ALS Rating]))
+
+(defn to-long [s]
+  (Long/parseLong s))
+
+(defn line->item-tuple [line]
+  (let [[id name] (str/split line #"\|")]
+    (vector (to-long id) name)))
+
+(defn load-items [path]
+  (with-open [rdr (io/reader (io/resource path))]
+    (->> (line-seq rdr)
+         (map line->item-tuple)
+         (into {}))))
 
 ;; (parse-long "10") ;;=> 10
 (defn parse-long [i]
@@ -130,3 +148,103 @@
 (defn pca [matrix]
   (.computePrincipalComponents matrix 10))
 
+;;;;;; call test
+(defn ex-7-34 []
+  (spark/with-context sc (-> (conf/spark-conf)
+                             (conf/master "local")
+                             (conf/app-name "ch7"))
+    (count-ratings sc)))
+
+
+(defn ex-7-35 []
+  (spark/with-context sc (-> (conf/spark-conf)
+                             (conf/master "local")
+                             (conf/app-name "ch7"))
+    (->> (parse-ratings sc)
+         (spark/collect)
+         (first))))
+
+(defn ex-7-36 []
+  (spark/with-context sc (-> (conf/spark-conf)
+                             (conf/master "local")
+                             (conf/app-name "ch7"))
+    (let [ratings (spark/cache (parse-ratings sc))
+          train (training-ratings ratings)
+          test  (test-ratings ratings)]
+      (println "Training:" (spark/count train))
+      (println "Test:"     (spark/count test)))))
+
+(defn ex-7-37 []
+  (spark/with-context sc (-> (conf/spark-conf)
+                             (conf/master "local")
+                             (conf/app-name "ch7"))
+    (-> (parse-ratings sc)
+        (training-ratings)
+        (alternating-least-squares {:rank 10
+                                    :num-iter 10
+                                    :lambda 1.0}))))
+
+(defn ex-7-38 []
+  (spark/with-context sc (-> (conf/spark-conf)
+                             (conf/master "local")
+                             (conf/app-name "ch7"))
+    (let [options {:rank 10
+                   :num-iter 10
+                   :lambda 1.0}
+          model (-> (parse-ratings sc)
+                    (training-ratings )
+                    (alternating-least-squares options))]
+      (into [] (.recommendProducts model 1 3)))))
+
+(defn ex-7-39 []
+  (spark/with-context sc (-> (conf/spark-conf)
+                             (conf/master "local")
+                             (conf/app-name "ch7"))
+    (let [items   (load-items "u.item")
+          id->name (fn [id] (get items id))
+          options {:rank 10
+                   :num-iter 10
+                   :lambda 1.0}
+          model (-> (parse-ratings sc)
+                    (training-ratings )
+                    (alternating-least-squares options))]
+      (->> (.recommendProducts model 1 3)
+           (map (comp id->name #(.product %)))))))
+
+
+(defn ex-7-40 []
+  (spark/with-context sc (-> (conf/spark-conf)
+                             (conf/master "local")
+                             (conf/app-name "ch7"))
+    (let [options {:num-iter 10 :lambda 0.1}
+          training (-> (parse-ratings sc)
+                       (training-ratings)
+                       (spark/cache))
+          ranks    (range 2 50 2)
+          errors   (for [rank ranks]
+                     (doto (-> (alternating-least-squares training
+                                                          (assoc options :rank rank))
+                               (rmse training))
+                       (println "RMSE for rank" rank)))]
+      (-> (c/scatter-plot ranks errors
+                          :x-label "Rank"
+                          :y-label "RMSE")
+          (i/view)))))
+
+(defn -main
+  [& args]
+  (do
+    (println "===============ex-7-34")
+    (ex-7-34)
+    (println "===============ex-7-35")
+    (ex-7-35)
+    (println "===============ex-7-36")
+    (ex-7-36)
+    (println "===============ex-7-37")
+    (ex-7-37)
+    (println "===============ex-7-38")
+    (ex-7-38)
+    (println "===============ex-7-39")
+    (ex-7-39)
+    (println "===============ex-7-40")
+    (ex-7-40)))
