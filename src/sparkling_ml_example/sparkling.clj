@@ -15,7 +15,8 @@
   (:import [org.apache.spark.api.java JavaRDD]
            [org.apache.spark.mllib.linalg Vector SparseVector]
            [org.apache.spark.mllib.linalg.distributed RowMatrix]
-           [org.apache.spark.mllib.recommendation ALS Rating]))
+           [org.apache.spark.mllib.recommendation ALS Rating]
+           [distributions PoissonDistribution]))
 
 (defn to-long [s]
   (Long/parseLong s))
