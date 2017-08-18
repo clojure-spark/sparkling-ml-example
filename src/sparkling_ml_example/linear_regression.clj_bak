@@ -1,0 +1,35 @@
+(ns sparkling-ml-example.linear-regression
+  (:gen-class)
+  (:require [clojure.string :as str]
+            [sparkling.conf :as conf]
+            [sparkling.core :as spark]
+            [sparkling.debug :as s-dbg]
+            [sparkling.destructuring :as s-de]
+            [sparkling.kryo :as k]
+            [sparkling.scalaInterop :as scala]
+            [clojure.java.io :as io]
+            [incanter.charts :as c]
+            [incanter.core :as i]
+            [incanter.datasets :as d]
+            [incanter.stats :as s])
+  (:import [org.apache.spark.api.java JavaRDD]
+           [org.apache.spark.mllib.linalg Vector SparseVector]
+           [org.apache.spark.mllib.linalg.distributed RowMatrix]
+           [org.apache.spark.mllib.linalg Vectors]
+           [org.apache.spark.mllib.regression StreamingLinearRegressionWithSGD LabeledPoint]
+           [org.apache.spark.streaming Seconds StreamingContext]
+           [sparkinterface VectorClojure]))
+
+#_(def zero-vector-data (VectorClojure/dense (into-array (map str (repeat 100 0.0)))))
+
+#_(doto (new StreamingLinearRegressionWithSGD)
+    (.setNumIterations 2)
+  (.setInitialWeights zero-vector-data)
+  ;;(.setNumIterations 1)
+  ;;(.setStepSize 0.01)
+  )
+
+(defn -main
+  [& args]
+  1
+  )

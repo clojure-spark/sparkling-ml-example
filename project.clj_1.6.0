@@ -9,7 +9,7 @@
                  [incanter "1.5.7"]
                  [colt/colt "1.2.0"]]
   :aot [#".*" sparkling.serialization sparkling.destructuring]
-  :main sparkling-ml-example.core
+  :main sparkling-ml-example.linear-regression
   :profiles {:provided {:dependencies [[org.apache.spark/spark-core_2.11 "1.6.0"]
                                        [org.apache.spark/spark-sql_2.11 "1.6.0"]]}
              :dev {:plugins [[lein-dotenv "RELEASE"]]}}
